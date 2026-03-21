@@ -1,0 +1,187 @@
+================================================================
+  WOMEN'S FOOTBALL INJURY PREDICTION MODEL
+  README & USER GUIDE
+================================================================
+
+Built using StatsBomb open data (WSL, NWSL, Women's World Cup,
+UEFA Women's Euro) across 540 matches and 1,805 players.
+
+----------------------------------------------------------------
+  SETUP — run once before first use
+----------------------------------------------------------------
+
+  pip install xgboost scikit-learn pandas numpy openpyxl
+
+  Make sure these files are in the SAME folder as the script:
+    - injury_prediction_model.py
+    - lineups_master.csv
+    - matches_master.csv
+    - player_summary.csv
+
+----------------------------------------------------------------
+  ALL COMMANDS
+----------------------------------------------------------------
+
+  1. PREDICT ALL PLAYERS (full report)
+  -------------------------------------
+  python injury_prediction_model.py
+
+  Outputs: injury_predictions.xlsx
+  Contains all 1,805 players ranked by injury probability
+  across all 3 horizons.
+
+
+  2. PREDICT A SPECIFIC PLAYER
+  ------------------------------
+  python injury_prediction_model.py --player "Samantha May Kerr"
+  python injury_prediction_model.py --player "Keira Walsh"
+  python injury_prediction_model.py --player "Caitlin Jade Foord"
+
+  Prints results to terminal AND saves:
+    injury_pred_Samantha_May_Kerr.xlsx
+
+
+  3. SEARCH FOR A PLAYER (if unsure of full name)
+  -------------------------------------------------
+  python injury_prediction_model.py --list --player "kerr"
+  python injury_prediction_model.py --list --player "walsh"
+  python injury_prediction_model.py --list --player "jones"
+  python injury_prediction_model.py --list --player "sam"
+
+  Shows all players whose name contains your search term.
+  Use the exact name shown in the output for --player.
+
+
+  4. LIST ALL PLAYERS (first 50)
+  --------------------------------
+  python injury_prediction_model.py --list
+
+  Shows first 50 players alphabetically.
+
+
+  5. FORCE RETRAIN THE MODEL
+  ---------------------------
+  python injury_prediction_model.py --retrain
+
+  The model caches after the first run (injury_model_cache.pkl)
+  so predictions are instant. Use --retrain if you add new data
+  or want fresh training.
+
+
+  6. COMBINE FLAGS
+  -----------------
+  python injury_prediction_model.py --player "Keira Walsh" --retrain
+  (predict a player AND retrain at the same time)
+
+
+----------------------------------------------------------------
+  WHAT THE OUTPUT MEANS
+----------------------------------------------------------------
+
+  next_match_injury_prob_pct
+    Probability (0-100%) the player gets injured in their
+    very next match.
+
+  next_7d_injury_prob_pct
+    Probability of injury within the next 7 days.
+
+  next_30d_injury_prob_pct
+    Probability of injury within the next 30 days.
+
+  severity_score
+    Estimated severity of injury if one occurs.
+    Higher = longer expected time out.
+
+  risk_tier
+    HIGH   = 65% or above  → immediate concern
+    MEDIUM = 35% to 64%    → monitor closely
+    LOW    = below 35%     → low risk
+
+
+----------------------------------------------------------------
+  EXCEL REPORT SHEETS
+----------------------------------------------------------------
+
+  Sheet                    | Contents
+  -------------------------|-------------------------------------
+  🏥 All Player Predictions | All players ranked by injury risk
+  🔴 High Risk              | Players 65%+ probability
+  🟡 Medium Risk            | Players 35-64% probability
+  📋 Per-Match (Top 5000)   | Match-by-match predictions
+  🔍 Feature Importance     | What drives the model most
+  📈 Model Performance      | Accuracy/AUC of all 4 models
+
+
+----------------------------------------------------------------
+  MODEL PERFORMANCE
+----------------------------------------------------------------
+
+  Horizon       Model     AUC-ROC    F1 Score   Accuracy
+  -----------   -------   -------    --------   --------
+  Next Match    XGBoost   96.2%      91.8%      92.3%
+  Next 7 Days   XGBoost   87.3%      54.0%      80.4%
+  Next 30 Days  XGBoost   96.3%      91.5%      92.3%
+
+  4 models trained and compared:
+    - Logistic Regression
+    - Random Forest
+    - XGBoost          ← best performer
+    - Ensemble (all 3 combined)
+
+
+----------------------------------------------------------------
+  KEY INJURY RISK FEATURES (in order of importance)
+----------------------------------------------------------------
+
+  1. carry              — ball carrying load
+  2. high_congestion    — less than 4 days rest between matches
+  3. pass               — passing volume
+  4. shot               — shooting frequency
+  5. interception       — defensive workload
+  6. physical_load      — combined contact actions
+  7. aggression         — fouls + duels + bad behaviour
+  8. miscontrol         — technical errors under pressure
+  9. clearance          — defensive clearances
+  10. dispossessed      — times lost the ball
+
+
+----------------------------------------------------------------
+  DATASET COVERAGE
+----------------------------------------------------------------
+
+  Competitions:
+    - FA Women's Super League     (326 matches, 6 seasons)
+    - FIFA Women's World Cup      (116 matches, 2019 + 2023)
+    - UEFA Women's Euro           (62 matches)
+    - NWSL                        (36 matches)
+
+  Total: 540 matches | 1,805 players | 21,172 player-match rows
+
+
+----------------------------------------------------------------
+  NOTES
+----------------------------------------------------------------
+
+  - Players must be in the StatsBomb dataset to be searchable.
+    If a player doesn't appear, they weren't in WSL/NWSL/WWC/Euro.
+
+  - The injury label is based on StatsBomb's "Injury Stoppage"
+    events (play stopped due to injury) as a proxy. This is not
+    the same as official injury records.
+
+  - The model caches to injury_model_cache.pkl after first run.
+    Delete this file or use --retrain to rebuild from scratch.
+
+  - All output Excel files save to the same folder as the script.
+
+================================================================
+  QUICK REFERENCE CHEAT SHEET
+================================================================
+
+  Search player    →  python injury_prediction_model.py --list --player "lastname"
+  Predict player   →  python injury_prediction_model.py --player "Full Name"
+  Predict all      →  python injury_prediction_model.py
+  List all players →  python injury_prediction_model.py --list
+  Retrain model    →  python injury_prediction_model.py --retrain
+
+================================================================
