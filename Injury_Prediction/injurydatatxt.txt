@@ -1,0 +1,39 @@
+From lineups_master.csv
+This file had a positions column with raw JSON like:
+json[{"position": "Goalkeeper", "from": "00:00", "to": null, "start_reason": "Starting XI", "end_reason": "Final Whistle"}]
+I parsed that JSON to extract:
+
+Minutes played — read the to time of the last position entry. If null = played full 90
+Is starter — checked if start_reason == "Starting XI"
+Subbed off — checked if end_reason contained "Substitution"
+Primary position — took the first position in the list
+Position risk group — manually mapped positions to High/Medium/Low risk (Goalkeepers, CBs, Forwards = High risk for ACL/contact injuries)
+Cards — parsed the cards JSON column for yellow/red counts
+
+
+From matches_master.csv
+Had match_date for every game. I merged this onto lineups then:
+
+Days since last match — sorted each player's matches by date, used .diff() to get gap in days
+High congestion flag — less than 4 days rest between matches
+Matches/minutes in last 14 & 30 days — for each match, looked back at that player's history window
+
+
+From player_summary.csv
+Had event counts per player per competition (passes, pressures, duels, blocks etc). I used these to build:
+
+Physical load score — sum of high-contact actions: pressures + duels + blocks + clearances + interceptions + dribbles
+Aggression score — weighted fouls × 2 + bad behaviour × 3 + duels
+Injury stoppages — direct column from StatsBomb, play stopped for injury
+
+
+Composite Risk Score
+Combined everything into one 0–100 score:
+pythoninjury_risk_score = (
+    workload   × 0.25 +   # total minutes
+    congestion × 0.20 +   # high congestion events
+    aggression × 0.20 +   # foul/duel behaviour
+    physical   × 0.20 +   # contact action load
+    cards      × 0.15     # yellow/red cards
+) × position_risk_weight  # High pos = ×1.2, Medium = ×1.0, Low = ×0.8
+All values were normalised to 0–1 before combining so no single feature dominates.
